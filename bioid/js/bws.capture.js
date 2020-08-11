@@ -13,10 +13,11 @@
     bws.initcapture = function (canvasElement, videoElement, issuedToken, options) {
         var defaults = {
             apiurl: 'https://bws.bioid.com/extension/',
-            task: 'enrollment', // | identification | enrollment | livenessdetection
-            trait: 'FACE',
+            task: 'enrollment', // | identification | enrollment |
+								// livenessdetection
+            trait: 'Face,Periocular',
             maxheight: 480,
-            recordings: 2,
+            recordings: 4,
             maxupload: 20,
             challengeResponse: false,
             motionareaheight: 160,
@@ -26,7 +27,7 @@
 
         // apply options to our default settings
         var settings = $.extend({}, defaults, options);
-        // for backward compatibility apply host if it has been set 
+        // for backward compatibility apply host if it has been set
         if (typeof settings.host !== 'undefined') { settings.apiurl = 'https://' + settings.host + '/extension/'; }
 
         // the canvas to draw the image and overlays
@@ -56,10 +57,14 @@
         var noMotionTimer;
         var noActivityTimer;
 
-        // possible status values: 
-        //  UserInstruction-NodYourHead, UserInstruction-FollowMe, UserInstruction-NoMovement, UserInstruction-PleaseWait
-        //  Uploading, Uploaded, UploadProgress, DisplayTag, Perform-verification, Perform-identification, Perform-enrollment, Perform-livenessdetection,
-        //  NoFaceFound, MultipleFacesFound, LiveDetectionFailed, ChallengeResponseFailed, NotRecognized, NoTemplateAvailable
+        // possible status values:
+        // UserInstruction-NodYourHead, UserInstruction-FollowMe,
+		// UserInstruction-NoMovement, UserInstruction-PleaseWait
+        // Uploading, Uploaded, UploadProgress, DisplayTag,
+		// Perform-verification, Perform-identification, Perform-enrollment,
+		// Perform-livenessdetection,
+        // NoFaceFound, MultipleFacesFound, LiveDetectionFailed,
+		// ChallengeResponseFailed, NotRecognized, NoTemplateAvailable
         var statusCallback; // arguments: status { message | tag } { dataURL }
         var doneCallback; // arguments: error
 
@@ -67,7 +72,10 @@
         var tag = 'any'; // any, up, down, left, right
         var tags = [];
 
-        /* ----------------------- Public function for capturing ------------------------- */
+        /*
+		 * ----------------------- Public function for capturing
+		 * -------------------------
+		 */
 
         // public method to start capturing. The functions
         // onSuccess(), onFailure(error) and onDone(error) must be applied,
@@ -126,7 +134,10 @@
             initRecording();
         };
 
-        /* ------------------------ Private image capturing functions ------------------ */
+        /*
+		 * ------------------------ Private image capturing functions
+		 * ------------------
+		 */
 
         // private method to init the size of the canvases
         function initializeCanvases() {
@@ -171,10 +182,12 @@
             let draw = canvas.getContext('2d');
             let copy = copycanvas.getContext('2d');
 
-            // we draw the frames manually using the private video element and the copy interim canvas
+            // we draw the frames manually using the private video element and
+			// the copy interim canvas
             copy.drawImage(video, cutoff / 2, 0, video.videoWidth - cutoff, video.videoHeight, 0, 0, copycanvas.width, copycanvas.height);
 
-            // at first we need aspectration of the video - portrait or landscape size
+            // at first we need aspectration of the video - portrait or
+			// landscape size
             let aspectrationvideo = video.videoWidth / video.videoHeight;
             let offset = 0;
             
@@ -196,7 +209,8 @@
            
             draw.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            // Drawing default white background e.g. Safari does not support canvas filter 'blur'!
+            // Drawing default white background e.g. Safari does not support
+			// canvas filter 'blur'!
             w = canvas.height * aspectratio - offset;
             let gradient = draw.createRadialGradient(canvas.width / 2, canvas.height / 2, 0, canvas.width / 2, canvas.height / 2, w * 0.5);
             gradient.addColorStop(0.98, 'transparent');
@@ -225,7 +239,8 @@
          
             if (capturing && uploaded < settings.recordings) {
                 // we may need to switch on the tags again ??????
-                //if (settings.challengeResponse && tag === 'any') { setTag(); }
+                // if (settings.challengeResponse && tag === 'any') { setTag();
+				// }
 
                 if (captured > settings.maxupload) {
                     stop();
@@ -243,19 +258,25 @@
                     movement = motionDetection(currentImageData, template);
                 }
 
-                // trigger if movement is above threshold (default: when 20% of maximum movement is exceeded)
+                // trigger if movement is above threshold (default: when 20% of
+				// maximum movement is exceeded)
                 if (movement > settings.threshold) {
                     if (uploaded + uploading < settings.recordings) {
-                        // in case we are not already bussy with some uploads start upload procedure
+                        // in case we are not already bussy with some uploads
+						// start upload procedure
                         upload();
-                        // current image is the new reference frame - create template
+                        // current image is the new reference frame - create
+						// template
                         template = createTemplate(currentImageData);
                     }
                 }
             }
         }
 
-        /* ------------------------ Timer functions ----------------------------------- */
+        /*
+		 * ------------------------ Timer functions
+		 * -----------------------------------
+		 */
 
         // we give a NoMovement response every 5 seconds
         function startMotionTimer() {
@@ -267,7 +288,8 @@
             }, 5000);
         }
 
-        // after a given time without activity from the user we abort the process
+        // after a given time without activity from the user we abort the
+		// process
         function startActivityTimer() {
             clearInterval(noActivityTimer);
             noActivityTimer = setInterval(function () {
@@ -281,7 +303,10 @@
             }, 30000);
         }
 
-        /* ------------------------ BWS Web Api calls --------------------------------- */
+        /*
+		 * ------------------------ BWS Web Api calls
+		 * ---------------------------------
+		 */
 
         // uploads an image to the BWS
         function upload() {
@@ -299,7 +324,8 @@
                 }
 
                 if (!$.support.cors) {
-                    // the call below typically requires Cross-Origin Resource Sharing!
+                    // the call below typically requires Cross-Origin Resource
+					// Sharing!
                     console.log('this browser does not support cors, e.g. IE8 or 9');
                 }
                 let jqxhr = $.ajax({
@@ -327,7 +353,6 @@
                     if (data.Accepted) {
                         uploaded++;
                         console.log('upload succeeded', data.Warnings);
-                        alert("upload succeeded"+ data.Warnings)
                         if (statusCallback) { statusCallback('Uploaded', data.Warnings.toString(), dataURL); }
                         if (uploaded >= settings.recordings && uploading === 0) {
                             // go for biometric task
@@ -335,7 +360,7 @@
                         }
                     } else {
                         console.log('upload error', data.Error);
-                        alert('upload error'+ data.Error);
+                        alert("upload failed"+data.Error);
                         if (statusCallback) { statusCallback(data.Error); } 
                         
                         if (uploaded < 1) {
@@ -355,7 +380,7 @@
                     // BadRequest (Invalid or unsupported sample format) or
                     // InternalServerError (An exception occured)
                     console.log('upload failed'+textStatus+errorThrown+jqXHR.responseText+textStatus+errorThrown+ jqXHR.responseText);
-                    alert("upload failed")
+                    alert("upload failed"+textStatus+errorThrown+jqXHR.responseText+textStatus+errorThrown+ jqXHR.responseText);
                     stop();
                     // redirect to caller with error response..
                     doneCallback(errorThrown);
@@ -367,60 +392,21 @@
             }
         }
 
-        // perform biometric task enrollment, verification, identification or liveness detection with already uploaded images
+        // perform biometric task enrollment, verification, identification or
+		// liveness detection with already uploaded images
         function performTask() {
             // we already have all images the motion timer is no longer required
             clearInterval(noMotionTimer);
-
-           /* // check which task should be executed and set right url extension
-            let url = settings.apiurl;
-            if (settings.task === 'enrollment') { url += 'enroll'; }
-            else if (settings.task === 'identification') { url += 'identify'; }
-            else if (settings.task === 'livenessdetection') { url += 'livenessdetection'; }
-            else { url += 'verify'; }*/
-
-            if (statusCallback) { statusCallback('Perform-' + settings.task); }
-
-            // take the control back to authenticator.authenticate where the biometric task is performed
-            
-           
-            jQuery('#bioIDForm:authenticateButton').click();
-            alert('on click'+settings.task)
-           // stop();
-           // doneCallback(); 
-         /*   // perform the call
-            let jqxhr = $.ajax({
-                type: 'GET',
-                url: url,
-                headers: { 'Authorization': 'Bearer ' + token }
-            }).done(function (data, textStatus, jqXHR) {
-                if (data.Success) {
-                    console.log('task succeeded');
-                    alert('task succeeded');
-                    stop();
-                    doneCallback();
-                } else {
-                    console.log('inside else task failed', data.Error);
-                    alert('inside else task failed', data.Error);
-                    let err = data.Error ? data.Error : 'NotRecognized';
-                    if (statusCallback) { statusCallback(err); }
-                    recording(false); // stop() -> in case of NoTemplateAvailable or no re-tries any more!?
-                    doneCallback(err, err !== 'NoTemplateAvailable');
-                }
-            }).fail(function (jqXHR, textStatus, errorThrown) {
-                // ups, call failed, typically due to
-                // Unauthorized (invalid token) or
-                // BadRequest (Invalid package) or
-                // InternalServerError (An exception occured)
-                console.log('task failed', textStatus, errorThrown, jqXHR.responseText);
-                alert('task failed' + textStatus + errorThrown + jqXHR.responseText);
-                stop();
-                // redirect to caller with error response..
-                doneCallback(errorThrown);
-            });*/
+            $(":input:submit[id='bioIDForm:enrollButton']").click();
+            //stop();
+            //doneCallback(); 
+        
         }
 
-        /* ------------------------ Set challenge response tag ------------------------- */
+        /*
+		 * ------------------------ Set challenge response tag
+		 * -------------------------
+		 */
 
         // generate a new challenge response tag or resets it to 'any'
         function setTag() {
@@ -428,7 +414,8 @@
                 let currentRecording = uploaded + uploading;
                 if (currentRecording > 0 && currentRecording < settings.recordings) {
                     if (tags.length >= currentRecording) {
-                        // use the preset (typically via the BWS access token) tags!
+                        // use the preset (typically via the BWS access token)
+						// tags!
                         tag = tags[currentRecording - 1];
                     }
                     else {
@@ -443,7 +430,8 @@
                                 else { newtag = 'right'; }
                             }
                             else {
-                                // create a tag in a direction different to the last movement axis 
+                                // create a tag in a direction different to the
+								// last movement axis
                                 if (tag === 'up' || tag === 'down') {
                                     if (r < 0.5) { newtag = 'left'; }
                                     else { newtag = 'right'; }
@@ -455,7 +443,8 @@
                             }
                         }
                         else {
-                            // create a tag in the opposite direction of the last tag
+                            // create a tag in the opposite direction of the
+							// last tag
                             switch (tag) {
                                 case 'left':
                                     newtag = 'right';
@@ -489,12 +478,16 @@
             }
         }
 
-        /* ------------------------ Motion Detection functions ------------------------ */
+        /*
+		 * ------------------------ Motion Detection functions
+		 * ------------------------
+		 */
 
         // template for cross-correlation
         function createTemplate(imageData) {
             // cut out the template
-            // we use a small width, quarter-size image around the center as template
+            // we use a small width, quarter-size image around the center as
+			// template
             var template = {
                 centerX: imageData.width / 2,
                 centerY: imageData.height / 2,
@@ -509,12 +502,12 @@
             let counter = 0;
             let p = imageData.data;
             for (let y = template.yPos; y < template.yPos + template.height; y++) {
-                // we use only the green plane here 
+                // we use only the green plane here
                 let bufferIndex = (y * imageData.width * 4) + template.xPos * 4 + 1;
                 for (let x = template.xPos; x < template.xPos + template.width; x++) {
                     let templatepixel = p[bufferIndex];
                     template.buffer[counter++] = templatepixel;
-                    // we use only the green plane here 
+                    // we use only the green plane here
                     bufferIndex += 4;
                 }
             }
@@ -524,9 +517,14 @@
 
         // motion detection by a normalized cross-correlation
         function motionDetection(imageData, template) {
-            // this is the major computing step: Perform a normalized cross-correlation between the template of the first image and each incoming image
-            // this algorithm is basically called "Template Matching" - we use the normalized cross correlation to be independent of lighting changes
-            // we calculate the correlation of template and image over the whole image area
+            // this is the major computing step: Perform a normalized
+			// cross-correlation between the template of the first image and
+			// each incoming image
+            // this algorithm is basically called "Template Matching" - we use
+			// the normalized cross correlation to be independent of lighting
+			// changes
+            // we calculate the correlation of template and image over the whole
+			// image area
             let bestHitX = 0,
                 bestHitY = 0,
                 maxCorr = 0,
@@ -538,20 +536,22 @@
                 for (let x = template.centerX - searchWidth; x <= template.centerX + searchWidth - template.width; x++) {
                     let nominator = 0, denominator = 0, templateIndex = 0;
 
-                    // Calculate the normalized cross-correlation coefficient for this position
+                    // Calculate the normalized cross-correlation coefficient
+					// for this position
                     for (let ty = 0; ty < template.height; ty++) {
-                        // we use only the green plane here 
+                        // we use only the green plane here
                         let bufferIndex = x * 4 + 1 + (y + ty) * imageData.width * 4;
                         for (let tx = 0; tx < template.width; tx++) {
                             let imagepixel = p[bufferIndex];
                             nominator += template.buffer[templateIndex++] * imagepixel;
                             denominator += imagepixel * imagepixel;
-                            // we use only the green plane here 
+                            // we use only the green plane here
                             bufferIndex += 4;
                         }
                     }
 
-                    // The NCC coefficient is then (watch out for division-by-zero errors for pure black images)
+                    // The NCC coefficient is then (watch out for
+					// division-by-zero errors for pure black images)
                     let ncc = 0.0;
                     if (denominator > 0) {
                         ncc = nominator * nominator / denominator;
@@ -564,11 +564,13 @@
                     }
                 }
             }
-            // now the most similar position of the template is (bestHitX, bestHitY). Calculate the difference from the origin
+            // now the most similar position of the template is (bestHitX,
+			// bestHitY). Calculate the difference from the origin
             let distX = bestHitX - template.xPos,
                 distY = bestHitY - template.yPos,
                 movementDiff = Math.sqrt(distX * distX + distY * distY);
-            // the maximum movement possible is a complete shift into one of the corners, i.e
+            // the maximum movement possible is a complete shift into one of the
+			// corners, i.e
             let maxDistX = searchWidth - template.width / 2,
                 maxDistY = searchHeight - template.height / 2,
                 maximumMovement = Math.sqrt(maxDistX * maxDistX + maxDistY * maxDistY);
@@ -578,7 +580,7 @@
             if (movementPercentage > 100) {
                 movementPercentage = 100;
             }
-            //console.log('Calculated movement: ', movementPercentage);
+            // console.log('Calculated movement: ', movementPercentage);
             return movementPercentage;
         }
 

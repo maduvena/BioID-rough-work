@@ -23,26 +23,36 @@ from java.lang import String
 class PersonAuthentication(PersonAuthenticationType):
     def __init__(self, currentTimeMillis):
         self.currentTimeMillis = currentTimeMillis
-        #constants for tasks
-        self.task_Verify = 0,
-        self.task_Identify = 0x10,
-        self.task_Enroll = 0x20,
-        self.task_LiveOnly = 0x80,
-        self.task_MaxTriesMask = 0x0F,
-        self.task_LiveDetection = 0x100,
-        self.task_ChallengeResponse = 0x200,
-        self.task_AutoEnroll = 0x1000
 
     def init(self, customScript,  configurationAttributes):
 
-        print "BioID. Initialized successfully"
-        self.ENDPOINT = "https://bws.bioid.com/extension/"
-        self.APP_IDENTIFIER = "c20b01cc-806a-45ed-8a1f-06347f8edf2c"
-        self.APP_SECRET = "sTGF4n4HAkvc2PnJp6CeNUNk"
-        self.PARTITION = "11811"
-        self.STORAGE = "bws"       
-        self.uid_attr = self.getLocalPrimaryKey()
         
+        if not configurationAttributes.containsKey("ENDPOINT"):
+            print "BioID. Initialization. Property ENDPOINT is mandatory"
+            return False
+        self.ENDPOINT = configurationAttributes.get("ENDPOINT").getValue2()
+        
+        if not configurationAttributes.containsKey("APP_IDENTIFIER"):
+            print "BioID. Initialization. Property APP_IDENTIFIER is mandatory"
+            return False
+        self.APP_IDENTIFIER = configurationAttributes.get("APP_IDENTIFIER").getValue2()
+        
+        if not configurationAttributes.containsKey("APP_SECRET"):
+            print "BioID. Initialization. Property APP_SECRET is mandatory"
+            return False
+        self.APP_SECRET = configurationAttributes.get("APP_SECRET").getValue2()
+        
+        if not configurationAttributes.containsKey("PARTITION"):
+            print "BioID. Initialization. Property PARTITION is mandatory"
+            return False
+        self.PARTITION = configurationAttributes.get("PARTITION").getValue2()
+        
+        if not configurationAttributes.containsKey("STORAGE"):
+            print "BioID. Initialization. Property STORAGE is mandatory"
+            return False
+        self.STORAGE = configurationAttributes.get("STORAGE").getValue2()
+        
+        print "BioID. Initialized successfully"
         return True   
 
     def destroy(self, configurationAttributes):
@@ -68,6 +78,7 @@ class PersonAuthentication(PersonAuthenticationType):
         identity = CdiUtil.bean(Identity)
         credentials = identity.getCredentials()
         user_name = credentials.getUsername()
+        
         if (step == 1):
             print "BioID. Authenticate for step 1"
 
@@ -79,104 +90,106 @@ class PersonAuthentication(PersonAuthenticationType):
                 return False
             
             identity.setWorkingParameter("user_name",user_name)
-            
-            print "user-name ok %s" % user_name
             bcid = self.STORAGE + "." + self.PARTITION + "." + str(String(user_name).hashCode())
+            print "BioID. username:bcid %s:%s" %(user_name, bcid)
+            
+            is_user_enrolled = self.isenrolled(bcid)
+            print "BioID. is_user_enrolled: '%s'" % is_user_enrolled
+            
+            if(is_user_enrolled == True):
+                identity.setWorkingParameter("bioID_auth_method","verification")
+            else:
+                identity.setWorkingParameter("bioID_auth_method","enrollment")
+                identity.setWorkingParameter("bioID_count_login_steps", 2)
+            
             return True
         
-        elif step == 2:
+        elif step == 2 or step == 3:
             
             auth_method = identity.getWorkingParameter("bioID_auth_method")
-            print "BioID. Authenticate method for step 2. bioID_auth_method: '%s'" % auth_method
-            
+            print "BioID. Authenticate method for step %s. bioID_auth_method: '%s'" % (step,auth_method)
+            user_name = identity.getWorkingParameter("user_name")
             bcid = self.STORAGE + "." + self.PARTITION + "." + str(String(user_name).hashCode())
-            if auth_method == 'enroll':
-                # invoke enroll API
-                access_token = self.getAccessToken( bcid, "enroll" )
-                identity.setWorkingParameter("access_token",access_token)
-                self.enroll(access_token)
-                return True
             
-            elif auth_method == 'authenticate':
-                # invoke upload API
-                access_token = self.getAccessToken( bcid, "verify" )
-                identity.setWorkingParameter("access_token",access_token)
-                return True
+            if step == 2 and 'enrollment' == auth_method:
+                # before the call to this method, the access token has been used up by the call to upload method
+                # therefore, as a first step, we get a new access token before invoking the enroll method
+                #access_token = self.getAccessToken( bcid, "enroll" )
+                access_token = identity.getWorkingParameter("access_token")
+                result = self.performBiometricOperation( access_token, "enroll")
+                
+                if result == True:
+                    #this means that enroll is a success, the next is step 3 authenticate
+                    identity.setWorkingParameter("bioID_count_login_steps", 3)
+                    identity.setWorkingParameter("bioID_auth_method","verification")
+                    return result
+                else:
+                    return False
             
-            else:
-                return False    
-        
+            else :
+                # before the call to this method, the access token has been used up by the call to upload method
+                # therefore, as a first step, we get a new access token before invoking the enroll method
+                #access_token = self.getAccessToken( bcid, "verify" )
+                access_token = identity.getWorkingParameter("access_token")
+                result = self.performBiometricOperation( access_token, "verify")
+                return result
+            
         else:
             return False
 
     
     def prepareForStep(self, configurationAttributes, requestParameters, step):
-        identity = CdiUtil.bean(Identity)
-        user_name = identity.getWorkingParameter("user_name")
         
+        print "BioID. Prepare for step called : step %s" % step
         if step == 1:
-            print "BioID. Prepare for step 1"
             return True
-        elif step == 2:
+        elif step == 2  or step == 3:
+            identity = CdiUtil.bean(Identity)
+            user_name = identity.getWorkingParameter("user_name")
             auth_method = identity.getWorkingParameter("bioID_auth_method")
-            print "BioID. Prepare for step 2 %s" % auth_method
-            print "user name %s" % user_name
+            print "BioID. step %s %s" % (step, auth_method)
             bcid = self.STORAGE + "." + self.PARTITION + "." + str(String(user_name).hashCode())
             print "bcid %s" %bcid
-            
-            if auth_method == 'enroll':
-                # invoke verify API
+            if step == 2 and auth_method == 'enrollment':
+                print "access token used by upload method - enroll"
                 access_token = self.getAccessToken( bcid, "enroll" )
-                print "access_token %s - " % access_token
-                identity.setWorkingParameter("access_token",access_token)
-                return True
-                
-            elif auth_method == 'authenticate':
-                # invoke upload API
+            # either step2 and verification or step 3 which is verification post enrollment
+            else:
+                print "access token used by upload method - verify"
                 access_token = self.getAccessToken( bcid, "verify" )
-                identity.setWorkingParameter("access_token",access_token)
-                return True
+                
+            print "access_token %s - " % access_token
+            identity.setWorkingParameter("access_token",access_token)
+            
+            return True
+            
         else:
             return False
 
     def getExtraParametersForStep(self, configurationAttributes, step):
-        return Arrays.asList("bioID_auth_method","access_token","user_name")
+        return Arrays.asList("bioID_auth_method","access_token","user_name","bioID_count_login_steps")
     
     
     def getCountAuthenticationSteps(self, configurationAttributes):
-        print "BioID. getCountAuthenticationSteps called"
-        return 2
-
-
-    def getPageForStep(self, configurationAttributes, step):
-        print "BioID. getPageForStep called %s" % str(step)
         
-        if step == 1:
-            return ""
-        elif step == 2:
-            identity = CdiUtil.bean(Identity)
-            credentials = identity.getCredentials()
-            user_name = credentials.getUsername()
-            
-            bcid = self.STORAGE + "." + self.PARTITION + "." + str(String(user_name).hashCode())
-            is_user_enrolled = self.isenrolled(bcid)
-            print "BioID. Get page for step 2. auth_method: '%s'" % is_user_enrolled
-            if(is_user_enrolled == True):
-                identity.setWorkingParameter("bioID_auth_method","authenticate")
-                return "/auth/bioid/bioid.xhtml"
-            else:
-                identity.setWorkingParameter("bioID_auth_method","enroll")
-                return "/auth/bioid/bioid.xhtml"
-                
-        elif step == 3:
-            return "/auth/bioID/bioIDlogin.xhtml"
-
-
-    def getNextStep(self, configurationAttributes, requestParameters, step):
-        print "BioID. getNextStep called %s" % str(step)
-        if step > 1:
+        identity = CdiUtil.bean(Identity)
+        if identity.isSetWorkingParameter("bioID_count_login_steps"):
+            print "BioID. getCountAuthenticationSteps called, returning - 3"
+            return 3
+        else:
+            print "BioID. getCountAuthenticationSteps called, returning - 2"
             return 2
 
+    def getPageForStep(self, configurationAttributes, step):
+        print "BioID. getPageForStep called -step:%s" % str(step)
+        if step > 1 :
+            return   "/auth/bioid/bioid.xhtml"
+        else:
+            return ""
+
+    def getNextStep(self, configurationAttributes, requestParameters, step):
+        print "BioID. getNextStep called.  %s" % str(step)
+        
         return -1
 
     def getLogoutExternalUrl(self, configurationAttributes, requestParameters):
@@ -197,7 +210,7 @@ class PersonAuthentication(PersonAuthenticationType):
         http_client = httpService.getHttpsClient()
         http_client_params = http_client.getParams()
 
-        bioID_service_url = self.ENDPOINT + "token?id="+self.APP_IDENTIFIER+"&bcid="+bcid+"&task=verify"
+        bioID_service_url = self.ENDPOINT + "token?id="+self.APP_IDENTIFIER+"&bcid="+bcid+"&task="+forTask+"&livedetection=true"
         encodedString = base64.b64encode((self.APP_IDENTIFIER+":"+self.APP_SECRET).encode('utf-8'))
         bioID_service_headers = {"Authorization": "Basic "+encodedString}
 
@@ -216,7 +229,6 @@ class PersonAuthentication(PersonAuthenticationType):
 
             response_bytes = httpService.getResponseContent(http_response)
             response_string = httpService.convertEntityToString(response_bytes, Charset.forName("UTF-8"))
-            print(response_string)
             httpService.consume(http_response)
             return response_string
         finally:
@@ -228,7 +240,8 @@ class PersonAuthentication(PersonAuthenticationType):
         http_client = httpService.getHttpsClient()
         http_client_params = http_client.getParams()
 
-        bioID_service_url = self.ENDPOINT + "isenrolled?bcid="+bcid+"&trait=face"
+        bioID_service_url = self.ENDPOINT + "isenrolled?bcid="+bcid+"&trait=Face,Periocular"
+        print "BioID. isenrolled URL - %s" %bioID_service_url
         encodedString = base64.b64encode((self.APP_IDENTIFIER+":"+self.APP_SECRET).encode('utf-8'))
         bioID_service_headers = {"Authorization": "Basic "+encodedString}
 
@@ -241,7 +254,7 @@ class PersonAuthentication(PersonAuthenticationType):
 
         try:
             if not httpService.isResponseStastusCodeOk(http_response):
-                print "BioID. Face not enrolled.  Get non 200 OK response from server:", str(http_response.getStatusLine().getStatusCode())
+                print "BioID. Face,Periocular not enrolled.  Get non 200 OK response from server:", str(http_response.getStatusLine().getStatusCode())
                 httpService.consume(http_response)
                 return False
 
@@ -249,46 +262,6 @@ class PersonAuthentication(PersonAuthenticationType):
                 return True
         finally:
             http_service_response.closeConnection()
-        
-    def getResultAPI(self, token):
-        httpService = CdiUtil.bean(HttpService)
-
-        http_client = httpService.getHttpsClient()
-        http_client_params = http_client.getParams()
-
-        bioID_service_url = self.ENDPOINT + "result?access_token="+token
-        encodedString = base64.b64encode((self.APP_IDENTIFIER+":"+self.APP_SECRET).encode('utf-8'))
-        bioID_service_headers = {"Authorization": "Basic "+encodedString}
-
-        try:
-            http_service_response = httpService.executeGet(http_client, bioID_service_url, bioID_service_headers)
-            http_response = http_service_response.getHttpResponse()
-        except:
-            print "BioID. Unable to obtain access token. Exception: ", sys.exc_info()[1]
-            return None
-
-        try:
-            if not httpService.isResponseStastusCodeOk(http_response):
-                print "BioID. Unable to obtain access token.  Get non 200 OK response from server:", str(http_response.getStatusLine().getStatusCode())
-                httpService.consume(http_response)
-                return None
-
-            response_bytes = httpService.getResponseContent(http_response)
-            response_string = httpService.convertEntityToString(response_bytes, Charset.forName("UTF-8"))
-            json_response = JSONObject(response_string)
-            print(json_response)
-            httpService.consume(http_response)
-        finally:
-            http_service_response.closeConnection()
-
-    def getLocalPrimaryKey(self):
-        entryManager = CdiUtil.bean(PersistenceEntryManager)
-        config = GluuConfiguration()
-        config = entryManager.find(config.getClass(), "ou=configuration,o=gluu")
-        #Pick (one) attribute where user id is stored (e.g. uid/mail)
-        uid_attr = config.getOxIDPAuthentication().get(0).getConfig().getPrimaryKey()
-        print "BIOId. init. uid attribute is '%s'" % uid_attr
-        return uid_attr
         
     def processBasicAuthentication(self, credentials):
         userService = CdiUtil.bean(UserService)
@@ -313,11 +286,12 @@ class PersonAuthentication(PersonAuthenticationType):
         return find_user_by_uid
     
     
-    def enroll(self, token):
+    def performBiometricOperation(self, token, task):
+        print "performBiometricOperation %s  %s:" % ( self.ENDPOINT + task, token)
         httpService = CdiUtil.bean(HttpService)
         http_client = httpService.getHttpsClient()
         http_client_params = http_client.getParams()
-        bioID_service_url = self.ENDPOINT + "enroll"
+        bioID_service_url = self.ENDPOINT + task+"?livedetection=true"
         bioID_service_headers = {"Authorization": "Bearer "+token}
 
         try:
@@ -325,16 +299,19 @@ class PersonAuthentication(PersonAuthenticationType):
             http_response = http_service_response.getHttpResponse()
             response_bytes = httpService.getResponseContent(http_response)
             response_string = httpService.convertEntityToString(response_bytes, Charset.forName("UTF-8"))
-            
-            print "Enroll response - %s" % response_string
+            json_response = JSONObject(response_string)
             httpService.consume(http_response)
-            if response_string == "Success":
+            if  json_response.get("Success") == True:
                 return True
             else:
+                print "BioID. Reason for failure : %s " % json_response.get("Error") 
                 return False
         except:
-            print "BioID. failed to invoke enroll API: ", sys.exc_info()[1]
+            print "BioID. failed to invoke %s API: %s" %(task,sys.exc_info()[1])
             return None
             
         finally:
             http_service_response.closeConnection()
+            
+            
+    

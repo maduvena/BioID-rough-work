@@ -1,230 +1,234 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-                "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+<!DOCTYPE composition PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
 	xmlns:f="http://xmlns.jcp.org/jsf/core"
-	xmlns:h="http://xmlns.jcp.org/jsf/html">
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	template="/WEB-INF/incl/layout/bioid-template.xhtml">
 
+	<f:metadata>
+		<f:viewAction action="#{authenticator.prepareAuthenticationForStep}"
+			if="#{not identity.loggedIn}" />
+	</f:metadata>
 
-<f:metadata>
-	<f:viewAction action="#{authenticator.prepareAuthenticationForStep}"
-		if="#{not identity.loggedIn}" />
-</f:metadata>
+	<ui:define name="head">
+		<meta charset="utf-8" />
 
-<h:head>
-	<meta charset="utf-8" />
+		<link href="./css/uui.css" rel="stylesheet" />
 
-	<link href="./css/uui.css" rel="stylesheet" />
-	
-	<title>BWS Unified User Interface</title>
-</h:head>
+	</ui:define>
+	<ui:define name="pageTitle">
+		BWS Unified User Interface
+	</ui:define>
 
-<h:body>
-	<header class="header"> <img class="logo"
-		src="./images/logo.svg" alt="BioID Logo" />
-	<div id="uuititle" class="title" data-res="titleVerification"></div>
-	</header>
-	<main class="main">
-	<div class="abortbutton">
-		<a id="uuicancel" href="" style="text-decoration: none;"><img
-			src="./images/back.svg" class="button-back" alt="abort"
-			data-res="buttonCancel" /><span class="action-title ml-3"
-			data-res="buttonCancel">back</span></a>
-	</div>
-	<section id="uuiintroduction" class="hidden">
-	<div class="intro-title mb-3" data-res="introductionTitle">How it
-		works</div>
-	<div class="row">
-		<div class="col col-right-border">
-			<div class="col-fix-size float-right">
-				<div class="intro-subtitle" data-res="introductionStep1">Step
-					1</div>
-				<div class="intro-description" data-res="introductionStep1Desc1">Before
-					you start</div>
-				<div class="intro-description" data-res="introductionStep1Desc2">
-					come closer to the camera</div>
-				<div class="row">
-					<div class="col m-3">
-						<div class="center">
-							<div class="red center" data-res="introductionTooFarAway">Too
-								far away!</div>
-							<img src="./images/toofaraway.png" />
-						</div>
-					</div>
-					<div class="col m-3">
-						<div class="center">
-							<div class="red center" data-res="introductionTooClose">Too
-								close!</div>
-							<img src="./images/tooclose.png" />
-						</div>
-					</div>
-				</div>
-				<div class="row">
-					<div class="col m-3">
-						<div class="center">
-							<div class="blue center" data-res="introductionPerfect">Perfect!</div>
-							<img src="./images/perfect.png" />
-						</div>
-					</div>
-				</div>
-			</div>
+	<ui:define name="body">
+
+		<header class="header"> <img class="logo"
+			src="./images/logo.svg" alt="BioID Logo" />
+		<div id="uuititle" class="title" data-res="titleVerification"></div>
+		</header>
+		<main class="main">
+		<div class="abortbutton">
+			<a id="uuicancel" href="" style="text-decoration: none;"><img
+				src="./images/back.svg" class="button-back" alt="abort"
+				data-res="buttonCancel" /><span class="action-title ml-3"
+				data-res="buttonCancel">back</span></a>
 		</div>
-		<div class="col">
-			<div class="col-fix-size float-left">
-				<div class="intro-subtitle" data-res="introductionStep2">Step
-					2</div>
-				<div class="intro-description" data-res="introductionStep2Desc1">For
-					Liveness Detection</div>
-				<div class="intro-description" data-res="introductionStep2Desc2">
-					nod your head slightly</div>
-				<div class="row mt-3">
-					<div class="col">
-						<div class="center m-3">
-							<video src="./video/nodyourhead.mp4" class="demo-video"
-								autoplay="autoplay" playsinline="playsinline" loop="loop"
-								muted="muted" oncontextmenu="return false;"></video>
+		<section id="uuiintroduction" class="hidden">
+		<div class="intro-title mb-3" data-res="introductionTitle">How
+			it works</div>
+		<div class="row">
+			<div class="col col-right-border">
+				<div class="col-fix-size float-right">
+					<div class="intro-subtitle" data-res="introductionStep1">Step
+						1</div>
+					<div class="intro-description" data-res="introductionStep1Desc1">Before
+						you start</div>
+					<div class="intro-description" data-res="introductionStep1Desc2">
+						come closer to the camera</div>
+					<div class="row">
+						<div class="col m-3">
+							<div class="center">
+								<div class="red center" data-res="introductionTooFarAway">Too
+									far away!</div>
+								<img src="./images/toofaraway.png" />
+							</div>
+						</div>
+						<div class="col m-3">
+							<div class="center">
+								<div class="red center" data-res="introductionTooClose">Too
+									close!</div>
+								<img src="./images/tooclose.png" />
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="row">
-					<div class="col mt-3">
-						<div class="intro-attention blue"
-							data-res="introductionDontMoveDevice">
-							<strong>Please don't move the device!</strong>
+					<div class="row">
+						<div class="col m-3">
+							<div class="center">
+								<div class="blue center" data-res="introductionPerfect">Perfect!</div>
+								<img src="./images/perfect.png" />
+							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-	</div>
-	<div class="row mt-3 mb-3">
-		<div class="col">
-			<div class="center">
-				<label class="checkbox"> <input type="checkbox"
-					class="intro-checkbox" id="introskip" value="yes"><span
-						data-res="introductionDontShowAgain">GOT IT! Don't show the
-							instruction again</span></input>
-				</label>
-			</div>
-		</div>
-	</div>
-	<div class="row center m-3">
-		<div class="col mb-5">
-			<button onclick="showIntroduction(false)"
-				class="button button-accept" data-res="buttonReadyToStart">I'm
-				ready to start</button>
-		</div>
-	</div>
-	</section> <section id="uuiwebapp" class="hidden">
-	<div class="row">
-		<div class="col center">
-			<div id="uuiinstruction" class="instruction transparent-background"></div>
-		</div>
-	</div>
-	<div class="row mt-3">
-		<div class="col center">
-		 <h:form id="bioIDForm">
-			<button id="uuistart" class="button" data-res="buttonStart">START</button>
-			<h:commandButton id="authenticateButton" action="#{authenticator.authenticate}" style="display: none;" />
-		</h:form>	
-		</div>
-	</div>
-	<div class="row">
-		<div class="col center m-3">
-			<div id="uuiliveview" class="liveview">
-				<div id="uuihead" class="head"></div>
-				<canvas id="uuicanvas" class="canvasview"></canvas>
-			</div>
-			<video id="livevideo" class="live" autoplay="autoplay"
-				playsinline="playsinline" oncontextmenu="return false;"></video>
-		</div>
-	</div>
-	<div class="row">
-		<div class="col center">
-			<div id="uuistatus" class="modal">
-				<div id="uuimessage"></div>
-				<div class="modal-footer">
-					<button id="uuiok" class="button button-ok">OK</button>
+			<div class="col">
+				<div class="col-fix-size float-left">
+					<div class="intro-subtitle" data-res="introductionStep2">Step
+						2</div>
+					<div class="intro-description" data-res="introductionStep2Desc1">For
+						Liveness Detection</div>
+					<div class="intro-description" data-res="introductionStep2Desc2">
+						nod your head slightly</div>
+					<div class="row mt-3">
+						<div class="col">
+							<div class="center m-3">
+								<video src="./video/nodyourhead.mp4" class="demo-video"
+									autoplay="autoplay" playsinline="playsinline" loop="loop"
+									muted="muted" oncontextmenu="return false;"></video>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col mt-3">
+							<div class="intro-attention blue"
+								data-res="introductionDontMoveDevice">
+								<strong>Please don't move the device!</strong>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-	<div id="uuisingleupload" class="uploadstatus-single">
-		<!-- status images for up to 4 recordings -->
-		<div id="uuiimage1" class="image">
-			<div id="uuiwait1" class="spinner spinner-wait"></div>
-			<div id="uuiupload1" class="spinner spinner-upload"
-				data-res="uploadInfo">Uploading...</div>
-			<img id="uuiuploaded1" class="image-uploaded" />
-			<div id="uuiprogress1" class="progress-single">
-				<div id="uuiprogressbar1" class="progressbar"></div>
+		<div class="row mt-3 mb-3">
+			<div class="col">
+				<div class="center">
+					<label class="checkbox"> <input type="checkbox"
+						class="intro-checkbox" id="introskip" value="yes"><span
+							data-res="introductionDontShowAgain">GOT IT! Don't show
+								the instruction again</span></input>
+					</label>
+				</div>
 			</div>
 		</div>
-		<div id="uuiimage2" class="image">
-			<div id="uuiwait2" class="spinner spinner-wait"></div>
-			<div id="uuiupload2" class="spinner spinner-upload"
-				data-res="uploadInfo">Uploading...</div>
-			<img id="uuiuploaded2" class="image-uploaded" />
-			<div id="uuiprogress2" class="progress-single">
-				<div id="uuiprogressbar2" class="progressbar"></div>
+		<div class="row center m-3">
+			<div class="col mb-5">
+				<button onclick="showIntroduction(false)"
+					class="button button-accept" data-res="buttonReadyToStart">I'm
+					ready to start</button>
 			</div>
 		</div>
-		<div id="uuiimage3" class="image">
-			<div id="uuiwait3" class="spinner spinner-wait"></div>
-			<div id="uuiupload3" class="spinner spinner-upload"
-				data-res="uploadInfo">Uploading...</div>
-			<img id="uuiuploaded3" class="image-uploaded" />
-			<div id="uuiprogress3" class="progress-single">
-				<div id="uuiprogressbar3" class="progressbar"></div>
+		</section> <section id="uuiwebapp" class="hidden">
+		<div class="row">
+			<div class="col center">
+				<div id="uuiinstruction" class="instruction transparent-background"></div>
 			</div>
 		</div>
-		<div id="uuiimage4" class="image">
-			<div id="uuiwait4" class="spinner spinner-wait"></div>
-			<div id="uuiupload4" class="spinner spinner-upload"
-				data-res="uploadInfo">Uploading...</div>
-			<img id="uuiuploaded4" class="image-uploaded" />
-			<div id="uuiprogress4" class="progress-single">
-				<div id="uuiprogressbar4" class="progressbar"></div>
+		<div class="row mt-3">
+			<div class="col center">
+				<h:form method="post" id="bioIDForm">
+					<h:commandButton id="enrollButton" value="Enroll Action" style="display:none"
+						action="#{authenticator.authenticate}" />
+				</h:form>
+				<button id="uuistart" class="button" data-res="buttonStart">START</button>
 			</div>
 		</div>
-	</div>
-	<div id="uuicompactupload" class="uploadstatus-compact">
-		<div id="uuiprogresscompact" class="progress-compact">
-			<div id="uuiprogressbarcompact" class="progressbar"></div>
-		</div>
-	</div>
-	</section> <section id="uuisplash" class="hidden">
-	<div class="row mt-9 d-flex justify-content-center">
-		<div class="col-8">
-			<div id="uuiprompt" class="promt">
-				<p data-res="prompt" class="mt-9"></p>
-				<p id="uuierror" class="alert-danger"></p>
-				<a id="uuiskip" class="button button-info" href=""
-					data-res="buttonContinue">Skip biometrics</a> <a id="uuimobileapp"
-					class="button button-info" href="" data-res="buttonMobileApp">Start
-					BioID app</a>
+		<div class="row">
+			<div class="col center m-3">
+				<div id="uuiliveview" class="liveview">
+					<div id="uuihead" class="head"></div>
+					<canvas id="uuicanvas" class="canvasview"></canvas>
+				</div>
+				<video id="livevideo" class="live" autoplay="autoplay"
+					playsinline="playsinline" oncontextmenu="return false;"></video>
 			</div>
 		</div>
-	</div>
-	</section> </main>
+		<div class="row">
+			<div class="col center">
+				<div id="uuistatus" class="modal">
+					<div id="uuimessage"></div>
+					<div class="modal-footer">
+						<button id="uuiok" class="button button-ok">OK</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="uuisingleupload" class="uploadstatus-single">
+			<!-- status images for up to 4 recordings -->
+			<div id="uuiimage1" class="image">
+				<div id="uuiwait1" class="spinner spinner-wait"></div>
+				<div id="uuiupload1" class="spinner spinner-upload"
+					data-res="uploadInfo">Uploading...</div>
+				<img id="uuiuploaded1" class="image-uploaded" />
+				<div id="uuiprogress1" class="progress-single">
+					<div id="uuiprogressbar1" class="progressbar"></div>
+				</div>
+			</div>
+			<div id="uuiimage2" class="image">
+				<div id="uuiwait2" class="spinner spinner-wait"></div>
+				<div id="uuiupload2" class="spinner spinner-upload"
+					data-res="uploadInfo">Uploading...</div>
+				<img id="uuiuploaded2" class="image-uploaded" />
+				<div id="uuiprogress2" class="progress-single">
+					<div id="uuiprogressbar2" class="progressbar"></div>
+				</div>
+			</div>
+			<div id="uuiimage3" class="image">
+				<div id="uuiwait3" class="spinner spinner-wait"></div>
+				<div id="uuiupload3" class="spinner spinner-upload"
+					data-res="uploadInfo">Uploading...</div>
+				<img id="uuiuploaded3" class="image-uploaded" />
+				<div id="uuiprogress3" class="progress-single">
+					<div id="uuiprogressbar3" class="progressbar"></div>
+				</div>
+			</div>
+			<div id="uuiimage4" class="image">
+				<div id="uuiwait4" class="spinner spinner-wait"></div>
+				<div id="uuiupload4" class="spinner spinner-upload"
+					data-res="uploadInfo">Uploading...</div>
+				<img id="uuiuploaded4" class="image-uploaded" />
+				<div id="uuiprogress4" class="progress-single">
+					<div id="uuiprogressbar4" class="progressbar"></div>
+				</div>
+			</div>
+		</div>
+		<div id="uuicompactupload" class="uploadstatus-compact">
+			<div id="uuiprogresscompact" class="progress-compact">
+				<div id="uuiprogressbarcompact" class="progressbar"></div>
+			</div>
+		</div>
+		</section> <section id="uuisplash" class="hidden">
+		<div class="row mt-9 d-flex justify-content-center">
+			<div class="col-8">
+				<div id="uuiprompt" class="promt">
+					<p data-res="prompt" class="mt-9"></p>
+					<p id="uuierror" class="alert-danger"></p>
+					<a id="uuiskip" class="button button-info" href=""
+						data-res="buttonContinue">Skip biometrics</a> <a id="uuimobileapp"
+						class="button button-info" href="" data-res="buttonMobileApp">Start
+						BioID app</a>
+				</div>
+			</div>
+		</div>
+		</section> </main>
 
-	<script src="./js/jquery-3.5.1.min.js"></script>
-	<script src="./js/getUserMedia.min.js"></script>
-	<script src="./js/bws.capture.js"></script>
-	<script src="./js/three.min.js"></script>
-	<script src="./js/objLoader.min.js"></script>
-
-	<script type="text/javascript">
+		<script src="./js/jquery-3.5.1.min.js"></script>
+		<script src="./js/getUserMedia.min.js"></script>
+		<script src="./js/bws.capture.js"></script>
+		<script src="./js/three.min.js"></script>
+		<script src="./js/objLoader.min.js"></script>
+		<script type="text/javascript">
 		//<![CDATA[
 
         var token = '${identity.getWorkingParameter('access_token')}';
         var returnURL = 'madhu-ubu16.infinity.com';
         var state = '${identity.getWorkingParameter('state')}';
         var apiurl = 'https://bws.bioid.com/extension/';
-        var task = 'enrollment';
-        var trait = "face";
+        var task = '${identity.getWorkingParameter('bioID_auth_method')}';;
+        
+        var trait = "Face,Periocular";
         var executions = 3;
-        var recordings = 2;
+        var recordings = 4;
         var threshold = 50;
         
         var challengeResponse = false;
@@ -822,7 +826,7 @@
             let loader = new THREE.OBJLoader(manager);
             let material = new THREE.MeshLambertMaterial({ transparent: false, opacity: 0.8 });
 
-            loader.load('/bws/model/head.obj', function (head) {
+            loader.load('./model/head.obj', function (head) {
                 head.traverse(function (child) {
                     if (child instanceof THREE.Mesh) {
                      // child.material = material;
@@ -1042,5 +1046,5 @@
         }
 		//    	]]>
 	</script>
-</h:body>
-</html>
+	</ui:define>
+</ui:composition>
