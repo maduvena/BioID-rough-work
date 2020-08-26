@@ -392,13 +392,57 @@
 
         // perform biometric task enrollment, verification, identification or
 		// liveness detection with already uploaded images
+        
         function performTask() {
             // we already have all images the motion timer is no longer required
             clearInterval(noMotionTimer);
-            
-            stop();
-            doneCallback(); 
-            $(":input:submit[id='bioIDForm:enrollButton']").click();
+
+            // check which task should be executed and set right url extension
+            let url = settings.apiurl;
+            if (settings.task === 'enrollment') { url += 'enroll'; }
+            else if (settings.task === 'identification') { url += 'identify'; }
+            else if (settings.task === 'livenessdetection') { url += 'livenessdetection'; }
+            else { url += 'verify'; }
+
+            if (statusCallback) { statusCallback('Perform-' + settings.task); }
+
+            // perform the call
+            let jqxhr = $.ajax({
+                type: 'GET',
+                url: url,
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).done(function (data, textStatus, jqXHR) {
+                if (data.Success) {
+                    console.log('task succeeded');
+                    stop();
+                    doneCallback();
+                    // invoke VM so that the enrollment is persisted 
+                    notifyServerOfSuccess();
+                    
+                } else {
+                    console.log('task failed', data.Error);
+                    let err = data.Error ? data.Error : 'NotRecognized';
+                    if (statusCallback) { statusCallback(err); }
+                    recording(false); // stop() -> in case of NoTemplateAvailable or no re-tries any more!?
+                    doneCallback(err, err !== 'NoTemplateAvailable');
+                }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                // ups, call failed, typically due to
+                // Unauthorized (invalid token) or
+                // BadRequest (Invalid package) or
+                // InternalServerError (An exception occured)
+                console.log('task failed', textStatus, errorThrown, jqXHR.responseText);
+                stop();
+                // redirect to caller with error response..
+                doneCallback(errorThrown);
+            });
+        }
+        
+        // invoke VM so that the enrollment is persisted 
+        function notifyServerOfSuccess()
+        {
+        	 var widget = zk.$('$readyButton');
+        	 zAu.send(new zk.Event(widget, "onData", msg, {toServer:true}));
         }
 
         /*

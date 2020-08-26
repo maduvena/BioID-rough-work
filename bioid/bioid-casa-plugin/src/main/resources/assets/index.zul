@@ -1,24 +1,40 @@
 <?page language="xhtml"?>
 <?init class="org.zkoss.zk.ui.util.Composition" template="/basic.zul"?>
-<?init class="org.gluu.casa.core.navigation.HomeInitiator"?>
-<zk:zk xmlns:z="http://www.zkoss.org/2005/zul" xmlns:h="xhtml" xmlns:zk="zk" xmlns="native">
+<zk:zk xmlns:z="http://www.zkoss.org/2005/zul" xmlns:h="xhtml" xmlns:zk="zk" xmlns:w="client" xmlns:ca="client/attribute" xmlns="native">
 
-<h:title self="@define(title)">${zkService.appName}</h:title>
+  
+    <h:title self="@define(title)">${zkService.appName} - ${labels.bioid_label}</h:title>
 
-    <z:div sclass="f7-cust flex justify-center mv4" self="@define(content)">
-        <div class="w-90 w-75-ns ba bw1 br2 b--light-gray flex flex-column items-center bg-blank">
-            <z:div sclass="pa4 f6" if="${empty pageScope.error}" id="message"
-                   viewModel="@id('vm') @init('org.gluu.casa.ui.vm.HomeViewModel')">
-                ${labels.general.wait}
-            </z:div>
-            <div class="pa4" unless="${empty pageScope.error}">
-                <h4>${pageScope.error}</h4>
-            </div>
-            <div class="pa2 mb2" unless="${empty pageScope.error}">
-                <p>${pageScope.description}</p>
-            </div>
-        </div>
+    <z:div if="${empty pageScope.error}" viewModel="@id('vm') @init('org.gluu.casa.plugins.bioid.vm.BioidViewModel')"
+           self="@define(maincontent)">
+
+        <z:include src="/back-home.zul"/>
+		<z:div children="@load(vm.devices)">
+            <zk:template name="children">
+                <div class="${css.panel} flex justify-between">
+                    <div class="flex items-start">
+                        <img  src="${zkService.contextPath}/pl/bioid-plugin/images/face.png" />
+                    	
+						<p class="ml3 mb0">
+							${labels.bioid_face_periocular_registered}
+                            <br />
+                            
+                        </p>
+                    </div>
+                    <div class="pt2">
+                        <h:button class="${css.editButton} mb2 mr2" w:onClick="prepareAlert()" onClick="@command('prepareForUpdate', device=each)"
+                                  data-original-title="${labels.general.edit}" data-toggle="tooltip" data-placement="top">
+                            <i class="fas fa-pencil-alt" />
+                        </h:button>
+                        <h:button class="${css.deleteButton} mb2" w:onClick="prepareAlert()" onClick="@command('delete', device=each)"
+                                  data-original-title="${labels.general.delete}" data-toggle="tooltip" data-placement="top">
+                            <i class="fas fa-trash-alt" />
+                        </h:button>
+                    </div>
+
+                </div>
+            </zk:template>
+        </z:div>
     </z:div>
-   
 
 </zk:zk>

@@ -5,6 +5,7 @@ import java.util.List;
 import org.gluu.casa.credential.BasicCredential;
 import org.gluu.casa.misc.Utils;
 import org.gluu.casa.plugins.bioid.BioIDService;
+import org.gluu.casa.plugins.bioid.model.BioIDCredential;
 import org.gluu.casa.service.ISessionContext;
 import org.gluu.casa.ui.UIUtils;
 import org.slf4j.Logger;
@@ -13,6 +14,9 @@ import org.zkoss.bind.annotation.Command;
 import org.zkoss.bind.annotation.Init;
 import org.zkoss.bind.annotation.NotifyChange;
 import org.zkoss.zk.au.out.AuInvoke;
+import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.select.annotation.Listen;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zk.ui.util.Clients;
 
@@ -20,8 +24,8 @@ public class BioidViewModel {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	@WireVariable
 	private ISessionContext sessionContext;
-	private List<BasicCredential> devices;
-	private BasicCredential newDevice;
+	private List<BioIDCredential> devices;
+	private BioIDCredential newDevice;
 	private String accessToken;
 	private String apiUrl;
 	private String task;
@@ -59,15 +63,15 @@ public class BioidViewModel {
 		this.trait = trait;
 	}
 
-	public BasicCredential getNewDevice() {
+	public BioIDCredential getNewDevice() {
 		return newDevice;
 	}
 
-	public void setNewDevice(BasicCredential newDevice) {
+	public void setNewDevice(BioIDCredential newDevice) {
 		this.newDevice = newDevice;
 	}
 
-	public List<BasicCredential> getDevices() {
+	public List<BioIDCredential> getDevices() {
 		return devices;
 	}
 
@@ -78,6 +82,7 @@ public class BioidViewModel {
 	public void init() {
 		logger.debug("init invoked");
 		sessionContext = Utils.managedBean(ISessionContext.class);
+		devices = BioIDService.getInstance().getBioIDDevices(sessionContext.getLoggedUser().getUserName());
 	}
 
 	@NotifyChange("*")
@@ -88,7 +93,7 @@ public class BioidViewModel {
 			sessionContext = Utils.managedBean(ISessionContext.class);
 			apiUrl = BioIDService.getInstance().getScriptPropertyValue("ENDPOINT");
 			trait = BioIDService.TRAIT_FACE_PERIOCULAR;
-			devices = BioIDService.getInstance().getDevices(sessionContext.getLoggedUser().getUserName());
+
 			String bcid = BioIDService.getInstance().getScriptPropertyValue("STORAGE") + "."
 					+ BioIDService.getInstance().getScriptPropertyValue("PARTITION") + "."
 					+ sessionContext.getLoggedUser().getUserName().hashCode();
@@ -106,7 +111,11 @@ public class BioidViewModel {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			Clients.response(new AuInvoke("initPage", accessToken, trait, task, apiUrl));
+			// values for task for the UI API are - enrollment , verification,
+			// identification and livenessdetection
+			Clients.response(new AuInvoke("initPage", accessToken, trait,
+					BioIDService.TASK_ENROLL.equals(task) ? "enrollment" : "verification", apiUrl,
+					Executions.getCurrent().getContextPath()));
 			Clients.scrollBy(0, 10);
 
 		} catch (Exception e) {
@@ -116,5 +125,41 @@ public class BioidViewModel {
 
 	}
 
-	
+	@NotifyChange("*")
+	@Command
+	public void delete() {
+		logger.debug("delete invoked");
+		try {
+			sessionContext = Utils.managedBean(ISessionContext.class);
+			apiUrl = BioIDService.getInstance().getScriptPropertyValue("ENDPOINT");
+			trait = BioIDService.TRAIT_FACE_PERIOCULAR;
+
+			String bcid = BioIDService.getInstance().getScriptPropertyValue("STORAGE") + "."
+					+ BioIDService.getInstance().getScriptPropertyValue("PARTITION") + "."
+					+ sessionContext.getLoggedUser().getUserName().hashCode();
+			try {
+				boolean success = BioIDService.getInstance().deleteBioIDCredential(sessionContext.getLoggedUser().getUserName());
+				if(success)
+				{
+					BioIDService.getInstance().removeFromPersistence(bcid, BioIDService.TRAIT_FACE_PERIOCULAR, sessionContext.getLoggedUser().getUserName());
+				}
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+		} catch (Exception e) {
+			UIUtils.showMessageUI(false);
+			logger.error(e.getMessage(), e);
+		}
+
+	}
+	@Listen("onData=#readyButton")
+    public void timedOut(Event event) throws Exception {
+        logger.debug("onData=#readyButton");
+        String bcid = BioIDService.getInstance().getScriptPropertyValue("STORAGE") + "."
+				+ BioIDService.getInstance().getScriptPropertyValue("PARTITION") + "."
+				+ sessionContext.getLoggedUser().getUserName().hashCode();
+        boolean success = BioIDService.getInstance().writeToPersistence(bcid, "enroll", BioIDService.TRAIT_FACE_PERIOCULAR, sessionContext.getLoggedUser().getUserName());
+    }
 }

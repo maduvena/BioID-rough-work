@@ -68,8 +68,8 @@ public class BioidExtension implements AuthnMethod {
 		String userName = sessionContext.getLoggedUser().getUserName();
 
 		try {
-			return BioIDService.getInstance().getDevices(userName).stream()
-					.map(dev -> new BasicCredential(dev.getNickName(), 0)).collect(Collectors.toList());
+			return BioIDService.getInstance().getBioIDDevices(userName).stream()
+					.map(dev -> new BasicCredential(dev.getBcid() , 0)).collect(Collectors.toList());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 			return Collections.emptyList();

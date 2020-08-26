@@ -3,6 +3,7 @@ var token
 var apiurl ;
 var task ; 
 var trait ; 
+var returnURL;
 
 var executions = 3;
 var recordings = 4;
@@ -88,14 +89,14 @@ var localizedData = {
 
 
 
-function initPage(accessToken,trait,task,apiUrl)
+function initPage(accessToken,trait,task,apiUrl,returnUrl)
 {
 	console.log("initPage called");
 	token =  accessToken
 	trait =  trait;
 	task  =  task;
 	apiUrl =  apiUrl;
-	
+	returnURL = returnUrl;
 }
 
 function initBioID()
@@ -111,6 +112,7 @@ function initBioID()
     else {
         showIntroduction(true);
     }
+    console.log("Init BioID completed successfully")
 }
 
 function showIntroduction(show) {
@@ -171,6 +173,7 @@ function mirror() {
 
 // localization of displayed strings
 function localize() {
+	console.log("start of localize");
     // loops through all HTML elements that must be localized.
     let resourceElements = $('[data-res]');
     for (let i = 0; i < resourceElements.length; i++) {
@@ -194,6 +197,7 @@ function localize() {
             }
         }
     }
+    console.log("end of localize");
 }
 
 // localization and string formatting (additional arguments replace {0}, {1}, etc. in localizedData[key])
@@ -240,6 +244,7 @@ function initialize() {
     }).always(function () {
         localize();
     });
+    console.log("Initialize completed");
 }
 
 /* ------------------ Start BWS capture jQuery plugin -----------------------------------*/
@@ -282,11 +287,12 @@ function onStart() {
             console.log('Current Execution: ' + currentExecution);
         } else {
             // done: redirect to caller ...
-            let url = returnURL + '?access_token=' + token;
+            let url = returnURL ; /*+ '?access_token=' + token;
             if (error !== undefined) {
                 url = url + '&error=' + error;
             }
-            url = url + '&state=' + state + '&skipintro=' + skipIntro;
+            url = url + '&state=' + state + '&skipintro=' + skipIntro;*/
+            
             window.location.replace(url);
         }
     }, function (status, message, dataURL) {
@@ -520,7 +526,7 @@ function initHead() {
     let loader = new THREE.OBJLoader(manager);
     let material = new THREE.MeshLambertMaterial({ transparent: false, opacity: 0.8 });
 
-    loader.load('/bws/model/head.obj', function (head) {
+    loader.load('/casa/pl/bioid-plugin/model/head.obj', function (head) {
         head.traverse(function (child) {
             if (child instanceof THREE.Mesh) {
              //   child.material = material;
@@ -530,7 +536,7 @@ function initHead() {
         head.position.y = 0;
         scene.add(head);
     }, onProgress, onError);
-
+    console.log("Loading BioIDHead");
     renderer.setClearColor(0x000000, 0); // the default
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(width, height);
@@ -737,4 +743,7 @@ function hideHead() {
     $('#uuihead').hide();
     resetHeadDisplay();
     console.log('hideHead');
+}
+function prepareAlert() {
+    alertRef = $('#feedback-bioid');
 }
