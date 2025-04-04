@@ -1,0 +1,10 @@
+@id("allow_one")
+permit(
+  principal is Jans::Workload,
+  action == Jans::Action::"GET",
+  resource is Jans::HTTP_Request
+)
+when {
+  principal has access_token.scope &&
+  principal.access_token.scope.contains("profile")
+};
